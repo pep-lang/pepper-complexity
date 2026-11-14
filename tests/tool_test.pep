@@ -165,8 +165,8 @@ baseline_notes_what_improved_or_vanished() {
     expect_equal(output.status.code().value(), 0);
     expect_equal(
         output.stderr,
-        "pep-complexity: note: tests/testdata/nested/deep.pep: 'deep' is down to 4 from 6: lower it in the baseline\n"
-            + "pep-complexity: note: tests/testdata/simple.pep: 'choose' is no longer over 1: remove it from the baseline\n"
+        "pep-complexity: note: 'tests/testdata/nested/deep.pep deep' is down to 4 from 6: lower it in the baseline\n"
+            + "pep-complexity: note: 'tests/testdata/simple.pep choose' is no longer over 1: remove it from the baseline\n"
     );
 }
 
@@ -182,4 +182,48 @@ bad_baseline_is_an_error_at_its_line() {
 baseline_needs_max() {
     expect_equal(run_tool(["--baseline", "x.txt", "tests/testdata"]).status.code().value(), 2);
     expect_equal(run_tool(["--write-baseline", "x.txt", "tests/testdata"]).status.code().value(), 2);
+}
+
+# Overloads share one line, holding the higher score, and a name may hold
+# a space (an extension of a generic type); `./` is not part of a name.
+[Test]
+write_baseline_merges_overloads_and_keeps_spaced_names() {
+    var folder = TempFolder("write_baseline_overloads");
+    var file = folder.path.join("baseline.txt");
+    var output = run_tool(["--max", "0", "--write-baseline", file.to_string(), "./tests/overloads"]);
+    expect_equal(output.status.code().value(), 0);
+    var written = File.read_to_string(file).value().replace("\r\n", "\n");
+    expect_true(
+        written.ends_with("\ntests/overloads/overloads.pep Pair<K, V>.keyed 1\ntests/overloads/overloads.pep pick 2\n")
+    );
+    expect_false(written.contains("./"));
+    # Read back: both functions are allowed, and a note names the whole key.
+    File.write_text(file, "tests/overloads/overloads.pep Pair<K, V>.keyed 3\ntests/overloads/overloads.pep pick 2\n");
+    var checked = run_tool(["--max", "0", "--baseline", file.to_string(), "tests/overloads"]);
+    expect_equal(checked.status.code().value(), 0);
+    expect_equal(
+        checked.stderr,
+        "pep-complexity: note: 'tests/overloads/overloads.pep Pair<K, V>.keyed' is down to 1 from 3: lower it in the baseline\n"
+    );
+}
+
+# A baseline's paths are read in the output's form: `\` is `/`, and a
+# leading `./` is dropped.
+[Test]
+baseline_paths_are_normalised() {
+    var output = run_with_baseline("baseline_normalised", "./tests\\testdata/nested/deep.pep deep 4\n");
+    expect_equal(output.status.code().value(), 0);
+    expect_equal(output.stdout, "");
+    expect_equal(output.stderr, "");
+}
+
+# A file that does not parse would lose its functions from the baseline:
+# nothing is written.
+[Test]
+write_baseline_refuses_after_a_parse_error() {
+    var folder = TempFolder("write_baseline_broken");
+    var file = folder.path.join("baseline.txt");
+    var output = run_tool(["--max", "0", "--write-baseline", file.to_string(), "tests/broken", "tests/testdata"]);
+    expect_equal(output.status.code().value(), 1);
+    expect_false(file.exists());
 }

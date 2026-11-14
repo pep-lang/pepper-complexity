@@ -113,7 +113,9 @@ One function per line, `path name score`, sorted by path and then name, so
 a change to it diffs as the functions it changes. A line starting with `#`
 is a comment. A function is known by its file and name, not its line,
 which shifts as the file changes; overloads share a line, which holds the
-highest of their scores. The paths are the names the output gives, so run
+highest of their scores. The score is after the last space; the path and
+the name may hold spaces (`HashMap<K, V>.copy`). The paths are the names
+the output gives (`\` read as `/`, no leading `./`), so run
 it from the same folder with the same paths each time.
 
 A listed function whose score went down, or that is no longer over `N`
@@ -121,8 +123,8 @@ A listed function whose score went down, or that is no longer over `N`
 standard error, so the file can shrink:
 
 ```text
-pep-complexity: note: src/main.pep: '_main' is down to 290 from 311: lower it in the baseline
-pep-complexity: note: src/old.pep: 'gone' is no longer over 25: remove it from the baseline
+pep-complexity: note: 'src/main.pep _main' is down to 290 from 311: lower it in the baseline
+pep-complexity: note: 'src/old.pep gone' is no longer over 25: remove it from the baseline
 ```
 
 `--write-baseline FILE` writes the baseline of the current run: every

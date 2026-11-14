@@ -15,6 +15,16 @@ struct _Baseline {
     construct() {}
 }
 
+# `path` with `/` for every separator and no leading `./`: the name the
+# output, `--exclude` and the baseline's keys give a file.
+_file_name(path: String): String {
+    var name = path.replace("\\", "/");
+    while (name.starts_with("./")) {
+        name = name.substr_bytes(2, name.size - 2);
+    }
+    return name;
+}
+
 # The key of the function `name` in `file`.
 _key(file: String, name: String): String {
     return file + " " + name;
@@ -35,12 +45,14 @@ _read_baseline(path: Path, into: _Baseline): String {
         if (entry.is_empty or entry.starts_with("#")) {
             continue;
         }
-        # The name has no spaces and the score none, so the path may.
+        # The score has no spaces, so the last one ends the key; the path
+        # and the name may both hold some (`Pair<K, V>.keyed`).
         var last = entry.rfind(" ");
         if (last <= 0 or !entry.substr_bytes(0, last as ulong).contains(" ")) {
             return $"{name}:{number}:1: error: expected 'path name score'";
         }
-        var key = entry.substr_bytes(0, last as ulong);
+        # A name has no `\`, so the whole key can be put in the output's form.
+        var key = _file_name(entry.substr_bytes(0, last as ulong));
         var score = int.parse(entry.substr_bytes(last as ulong + 1, entry.size - last as ulong - 1));
         if (!score.is_value() or score.value() < 0) {
             return $"{name}:{number}:{last + 2}: error: expected a score of 0 or more";

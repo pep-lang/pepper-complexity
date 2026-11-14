@@ -71,8 +71,7 @@ _main(args: String[]): int {
     if (baseline.is_set) {
         var error = _read_baseline(Path(baseline.value()), allowed);
         if (!error.is_empty) {
-            File.stderr().write_all(error + "
-");
+            File.stderr().write_all(error + "\n");
             return 1;
         }
     }
@@ -101,13 +100,19 @@ _main(args: String[]): int {
         }
     }
     if (write_baseline.is_set) {
-        var error = _write_baseline(Path(write_baseline.value()), over, over_keys, limit);
-        if (!error.is_empty) {
-            File.stderr().write_all(error + "
-");
+        # A file that did not parse would drop its functions from the baseline.
+        if (failed) {
+            File.stderr().write_all(
+                "pep-complexity: error: the baseline is not written, since a file was not scored\n"
+            );
             return 1;
         }
-        return failed ? 1 : 0;
+        var error = _write_baseline(Path(write_baseline.value()), over, over_keys, limit);
+        if (!error.is_empty) {
+            File.stderr().write_all(error + "\n");
+            return 1;
+        }
+        return 0;
     }
     _note_improvements(allowed, over, limit);
     _list(failing, top.value_or(-1), as_json.is_set);
@@ -150,17 +155,15 @@ _excluded(file: Path, excludes: String[]): bool {
 # or no longer over the limit, so the baseline can shrink.
 _note_improvements(allowed: _Baseline, over: HashMap<String, int>, limit: int) {
     for (var key in allowed.keys) {
-        # The name has no spaces, so the last one ends the path.
-        var split = key.rfind(" ") as ulong;
-        var at = $"pep-complexity: note: {key.substr_bytes(0, split)}: '{key.substr_bytes(split + 1, key.size - split - 1)}'";
+        # The whole key: a path and a name may each hold spaces
+        # (`Pair<K, V>.keyed`), so it cannot be split back.
+        var at = $"pep-complexity: note: '{key}'";
         var now = over.try_get(key);
         if (!now.is_value()) {
-            File.stderr().write_all($"{at} is no longer over {limit}: remove it from the baseline
-");
+            File.stderr().write_all($"{at} is no longer over {limit}: remove it from the baseline\n");
         } else if (now.value() < allowed.allowed[key]) {
             File.stderr().write_all(
-                $"{at} is down to {now.value()} from {allowed.allowed[key]}: lower it in the baseline
-"
+                $"{at} is down to {now.value()} from {allowed.allowed[key]}: lower it in the baseline\n"
             );
         }
     }
@@ -209,12 +212,7 @@ _files(path: Path): Path[] {
 # `file` as the output names it: one separator on every system, so output
 # compares across them.
 _name(file: Path): String {
-    var name = file.to_string().replace("\\", "/");
-    # `./src/a.pep` is `src/a.pep`, for the baseline's keys and `--exclude`.
-    while (name.starts_with("./")) {
-        name = name.substr_bytes(2, name.size - 2);
-    }
-    return name;
+    return _file_name(file.to_string());
 }
 
 # Scores `file` into `found`; false after reporting why it could not.
