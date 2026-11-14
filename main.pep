@@ -43,6 +43,12 @@ _main(args: String[]): int {
     if (!parser.parse(args)) {
         return 2;
     }
+    if (max.is_set and max.value() < 0) {
+        return parser.usage_error("'--max' needs 0 or more");
+    }
+    if (top.is_set and top.value() < 1) {
+        return parser.usage_error("'--top' needs 1 or more");
+    }
     var found = Array<_Found>();
     var failed = false;
     for (var source in sources.values()) {
@@ -60,10 +66,14 @@ _main(args: String[]): int {
     );
     var limit = max.value_or(-1);
     var count = top.value_or(-1);
+    var over = false;
     var listed = Array<_Found>();
     for (var each in found) {
-        if (each.score.cognitive > limit and (count < 0 or listed.count < count as ulong)) {
-            listed.append(each);
+        if (each.score.cognitive > limit) {
+            over = true;
+            if (count < 0 or listed.count < count as ulong) {
+                listed.append(each);
+            }
         }
     }
     if (as_json.is_set) {
@@ -73,7 +83,7 @@ _main(args: String[]): int {
             print($"{each.file}:{each.score.line} {each.score.name} {each.score.cognitive} {each.score.cyclomatic}");
         }
     }
-    return failed or (limit >= 0 and !listed.is_empty) ? 1 : 0;
+    return failed or (limit >= 0 and over) ? 1 : 0;
 }
 
 # A file as given, or every `.pep` file under a directory, skipping
@@ -83,9 +93,14 @@ _files(path: Path): Path[] {
         return [path];
     }
     var root = path.to_string();
+    # `src/` is `src`, so the files under it read the same either way.
+    while (root.size > 1 and (root.ends_with("/") or root.ends_with("\\"))) {
+        root = root.substr_bytes(0, root.size - 1);
+    }
     var out = Array<Path>();
     for (var file in glob(root + "/**/*.pep")) {
-        var below = file.to_string().substr_bytes(root.size, file.to_string().size - root.size).replace("\\", "/");
+        var below = "/"
+            + file.to_string().substr_bytes(root.size, file.to_string().size - root.size).replace("\\", "/");
         if (!below.contains("/.")) {
             out.append(file);
         }

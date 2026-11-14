@@ -370,7 +370,7 @@ names_every_member() {
     }
     expect_equal(
         " ".join(names),
-        "Box.construct@9 Box.destruct@13 Box.grow@17 Box.area.get@4 Shape.sides@23 int.doubled@31 free@38"
+        "Box.area.get@4 Box.construct@9 Box.destruct@13 Box.grow@17 Shape.sides@23 int.doubled@31 free@38"
     );
     expect_equal(score_of(source, "Box.area.get").cognitive, 1);
 }

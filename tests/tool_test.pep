@@ -70,3 +70,30 @@ syntax_error_is_reported_and_fails() {
 missing_path_is_a_usage_error() {
     expect_equal(run_tool(Array<String>()).status.code().value(), 2);
 }
+
+# A trailing separator changes nothing, and a folder starting with `.`
+# directly under the argument is still skipped.
+[Test]
+trailing_separator_reads_the_same() {
+    var plain = run_tool(["tests/testdata"]);
+    var slashed = run_tool(["tests/testdata/"]);
+    expect_equal(slashed.status.code().value(), 0);
+    expect_equal(slashed.stdout, plain.stdout);
+    expect_false(run_tool(["tests/testdata/nested/.."]).stdout.contains("hidden"));
+}
+
+# `--top` limits what is listed, not whether `--max` fails.
+[Test]
+max_fails_even_when_top_lists_fewer() {
+    var output = run_tool(["--max", "0", "--top", "1", "tests/testdata"]);
+    expect_equal(output.status.code().value(), 1);
+    expect_equal(output.stdout, "tests/testdata/nested/deep.pep:1 deep 4 4\n");
+}
+
+[Test]
+out_of_range_counts_are_usage_errors() {
+    expect_equal(run_tool(["--top", "0", "tests/testdata"]).status.code().value(), 2);
+    expect_equal(run_tool(["--top", "-1", "tests/testdata"]).status.code().value(), 2);
+    expect_equal(run_tool(["--max", "-1", "tests/testdata"]).status.code().value(), 2);
+    expect_equal(run_tool(["--max", "0", "tests/testdata"]).status.code().value(), 1);
+}

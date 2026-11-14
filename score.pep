@@ -60,6 +60,8 @@ export score_source(source: String): Result<FunctionScore[]> {
     for (var declaration in parsed.value().declarations) {
         _score_declaration(source, declaration, out);
     }
+    # Members are gathered kind by kind: put them back in source order.
+    out.sort((a, b) => a.line < b.line ? -1 : (a.line > b.line ? 1 : 0));
     return Result<FunctionScore[]>.ok(out);
 }
 
