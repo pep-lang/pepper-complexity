@@ -1,0 +1,23 @@
+[package]
+name = "complexity"
+version = "0.1.0"
+description = "pep-complexity: the cognitive and cyclomatic complexity of Pepper functions"
+license = "Apache-2.0"
+repository = "https://github.com/pep-lang/pepper-complexity"
+# The oldest Pepper toolchain that builds the package (and the oldest that
+# knows the key): CI also tests with it, and `pepper package` skips a
+# version whose minimum is newer than the user's toolchain.
+minimum_toolchain = "0.11.0"
+
+[build]
+entry = "main.pep"
+output = "pep-complexity"
+# The compiler's parser, `compiler.parse`, and the `syntax` lexer it reads
+# are folders of pep-lang/pepper's tools/, fetched as the `pepper`
+# dependency: put that folder on the import path.
+include = [".pep/deps/github.com/pep-lang/pepper/tools"]
+
+[dependencies]
+# Only its tools/ folder is used. The tag is the toolchain release whose
+# syntax the parser reads.
+pepper = { github = "pep-lang/pepper", tag = "v0.12.0" }

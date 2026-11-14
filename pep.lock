@@ -1,0 +1,10 @@
+# Written by `pepper package`: the exact revision of every dependency.
+# Commit it with pep.toml; do not edit it by hand.
+version = 1
+
+[[package]]
+name = "pepper"
+source = "github:pep-lang/pepper"
+version = "0.12.0"
+commit = "6123d9f1a625a0b1baf8c5db474f8c0c6dfcd56d"
+sha256 = "071a216806e3b2dc3a8f3a93beddc5ecc444604fe5ad34791afded629066f773"
