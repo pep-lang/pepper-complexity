@@ -1,6 +1,6 @@
 [package]
 name = "complexity"
-version = "0.1.0"
+version = "0.2.0"
 description = "pep-complexity: the cognitive and cyclomatic complexity of Pepper functions"
 license = "Apache-2.0"
 repository = "https://github.com/pep-lang/pepper-complexity"
